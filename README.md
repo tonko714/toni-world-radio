@@ -1,22 +1,30 @@
 # Toni's World Receiver 📻
 
-Mobile-first shortwave receiver simulator based on the nine SW ranges photographed from Toni's physical radio.
+Web-App: https://tonko714.github.io/toni-world-radio/
 
-## Status
-- `index.html`: interactive interface (SW 1–9, tuner, frequency filters, local imports and favorites).
-- `import_schedules.py`: draft parser for HFCC ITU and EiBi schedule files. Parsing of the full official archives is **not yet end-to-end validated**.
-- `update_database.py`: draft fetch, validate and export pipeline.
-- `.github/workflows/update.yml`: weekly scheduled attempt every Monday 06:17 UTC and manual dispatch. A workflow run **does not prove** the import succeeded; verify the Actions logs and generated `senderdaten.json`.
-- No fabricated station data is bundled. The directory can be empty until real files are successfully parsed.
+## What's running
+- Nine real-radio SW ranges, 5-kHz tuning, UTC time and weekday filters, source-labeled station cards.
+- Generated `senderdaten.json` combines verified HFCC schedule downloads over HTTPS with EiBi records from a third-party HTTPS mirror. Updates run on Mondays at 06:17 UTC and via Actions.
+- `hfcc_html.py`: official HFCC timetable parser.
+- `eibi_mirror.py`: EiBi semicolon CSV parser with safe day/date filtering and validation.
+- `update_database.py`: atomic merge, timestamp and per-source import status.
+- Tests: `python -m unittest test_hfcc_html test_eibi_mirror -v`.
 
-## Hosting
-This repository is currently private. To publish on GitHub Pages under a regular GitHub Free account, make it public first (Settings → General → Danger Zone → Change repository visibility). Then enable Pages under Settings → Pages → Build and deployment → Deploy from a branch → main / (root). The expected URL would be https://tonko714.github.io/toni-world-radio/ once GitHub actually deploys it.
+## EiBi certificate workaround and trust
+The official EiBi host currently has a **hostname-mismatched HTTPS certificate**. Disabling verification is not acceptable. EiBi traditionally distributes the CSV over plain HTTP, which lacks tamper-resistant transport.
 
-## Run and test locally
-Open index.html in a browser. For a server: `python -m http.server 8000`, then visit http://localhost:8000.
+Instead we fetch from **https://github.com/cdburgess75/SkyWave/tree/data** (a separately maintained EiBi mirror) using valid HTTPS. The parser checks the mirror metadata, expected season, byte count, row count, age, CSV structure and plausible schedules before publishing. The original provider is **Eike Bierwirth (EiBi)**, not the mirror author.
 
-## Data
-HFCC: https://new.hfcc.org/data/ ; EiBi: https://www.eibispace.de/ . Seasonal schedules in UTC can differ from actual reception and may be wrong or superseded. Attribution and reuse terms must be respected. Never interpret an empty listing as a free frequency.
+**Trust limitation:** HTTPS authenticates the GitHub mirror, not the original EiBi data. Fully authoritative authentication would require EiBi to offer working HTTPS or signed official releases. Source provenance is retained in each record and source statistics.
 
-## Next
-Test downloads and full A26/B26 files; resolve HFCC broadcaster and transmitter codes; normalize EiBi day exceptions; add validation and a clear data freshness indicator.
+## Data behavior
+EiBi entries with special or ambiguous weekday markers are skipped instead of falsely treated as daily. Inactive/out-of-season entries are skipped; partial-season entries are evaluated against the date of import. HFCC/EiBi records are kept distinguishable because publisher schedules may overlap.
+
+The generated JSON includes source counts and warnings. If EiBi fetching fails, validated HFCC data still update; the EiBi status reflects the failure.
+
+**This is a schedule reference and reception simulation, not actual radio reception.** Schedule listings do not establish actual signal strength or guaranteed reception in Cologne.
+
+Sources and usage conditions:
+- Official HFCC: https://new.hfcc.org/data/
+- EiBi: https://www.eibispace.de/ (official README at http://www.eibispace.de/dx/README.TXT)
+- Mirror: https://github.com/cdburgess75/SkyWave/tree/data
