@@ -1,0 +1,48 @@
+name: Check radio interface
+on:
+  push:
+    paths:
+      - 'index.html'
+      - '.github/workflows/ui-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract interface JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          html=Path('index.html').read_text(encoding='utf-8')
+          assert html.count('<script>')==1
+          assert html.count('</script>')==1
+          js=html.split('<script>',1)[1].split('</script>',1)[0]
+          Path('/tmp/toni-radio-ui.js').write_text(js,encoding='utf-8')
+          print('JavaScript size:',len(js))
+          PY
+      - name: JavaScript syntax
+        run: node --check /tmp/toni-radio-ui.js
+      - name: Radio band regression tests
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          bands=re.findall(r"\['((?:SW [1-9])|AM|FM1|FM2)',(\d+),(\d+),(\d+),'([^']+)'\]",s)
+          expected=[
+            ('SW 1',4750,5060),('SW 2',5600,6400),('SW 3',6800,7600),
+            ('SW 4',9200,10000),('SW 5',11450,12250),('SW 6',13400,14200),
+            ('SW 7',15000,15900),('SW 8',17100,18000),('SW 9',21200,22000),
+            ('AM',522,1620),('FM1',87000,108000),('FM2',64000,108000)]
+          found=[(name,int(low),int(high)) for name,low,high,_,_ in bands]
+          assert found==expected,(found,expected)
+          for name,low,high,tuned,_ in bands:
+            assert int(low)<=int(tuned)<=int(high),(name,low,high,tuned)
+          for target in ('otherBands','bandLabel','readoutUnit','scale','tune'):
+            assert f'id="{target}"' in s,target
+          assert 'tuneOnDial' in s
+          print('12 original frequency ranges verified')
+          PY
