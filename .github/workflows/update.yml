@@ -32,4 +32,17 @@ jobs:
           git config user.name 'radio-data-bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add senderdaten.json
-          git diff --cached --quiet || (git commit -m 'Refresh verified HFCC timetable' && git push)
+          if ! git diff --cached --quiet; then
+            git commit -m 'Refresh verified HFCC timetable'
+            # Other edits may have reached main during the 20-second download.
+            # Rebase on latest main and retry without ever force-pushing.
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              if git push origin HEAD:main; then
+                exit 0
+              fi
+              sleep 3
+            done
+            echo 'Could not publish schedule after three attempts' >&2
+            exit 1
+          fi
