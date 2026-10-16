@@ -6,6 +6,8 @@ on:
   push:
     paths:
       - 'hfcc_html.py'
+      - 'eibi_mirror.py'
+      - 'test_eibi_mirror.py'
       - 'update_database.py'
       - 'test_hfcc_html.py'
       - '.github/workflows/update.yml'
@@ -24,8 +26,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Test schedule parser
-        run: python -m unittest test_hfcc_html -v
-      - name: Fetch and validate official HFCC schedules
+        run: python -m unittest test_hfcc_html test_eibi_mirror -v
+      - name: Fetch and validate HFCC + mirrored EiBi schedules
         run: python update_database.py
       - name: Commit validated data
         run: |
