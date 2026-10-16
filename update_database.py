@@ -14,12 +14,16 @@ with tempfile.TemporaryDirectory() as folder:
  for src,url in urls.items():
   dest=pathlib.Path(folder)/(src+('.zip' if src=='HFCC' else '.csv'))
   req=urllib.request.Request(url,headers={'User-Agent':'ToniWorldReceiver/0.2'})
-  with urllib.request.urlopen(req,timeout=40) as response:
-   data=response.read(15000001)
-  if len(data)<1000 or len(data)>15000000:raise ValueError(f'{src} download size invalid')
-  dest.write_bytes(data);paths[src]=dest
- result=build([paths['HFCC']],[paths['EiBi']],season)
- if min(result['counts'].values())<100:raise ValueError('Too few valid records: not replacing database')
+  try:
+   with urllib.request.urlopen(req,timeout=40) as response:
+    data=response.read(15000001)
+   if len(data)<1000 or len(data)>15000000:raise ValueError(f'{src} download size invalid')
+   dest.write_bytes(data);paths[src]=dest
+  except Exception as exc:
+   if src=='HFCC':raise
+   print(f'WARNING: EiBi unavailable ({type(exc).__name__}: {exc}); proceeding with HFCC only')
+ result=build([paths['HFCC']],[paths['EiBi']] if 'EiBi' in paths else [],season)
+ if result['counts']['HFCC']<100:raise ValueError('Too few valid HFCC records: not replacing database')
  out=pathlib.Path(a.out);temp=out.with_suffix('.tmp')
  temp.write_text(json.dumps(result,ensure_ascii=False,separators=(',',':')),encoding='utf-8');temp.replace(out)
  print(f"Updated {len(result['records'])} records for {season}")
