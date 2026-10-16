@@ -8,7 +8,7 @@ def season_for(d):
  return ('A'+str(d.year%100).zfill(2)) if last_sunday(d.year,3)<=d<last_sunday(d.year,10) else ('B'+str((d.year if d>=last_sunday(d.year,10) else d.year-1)%100).zfill(2))
 p=argparse.ArgumentParser();p.add_argument('--season');p.add_argument('--eibi-url');p.add_argument('--out',default='senderdaten.json');a=p.parse_args()
 season=a.season or season_for(datetime.datetime.now(datetime.timezone.utc).date())
-urls={'HFCC':f'https://new.hfcc.org/data/{season.lower()}/{season.lower()}allx2.zip','EiBi':a.eibi_url or f'http://eibispace.de/dx/sked-{season.lower()}.csv'}
+urls={'HFCC':f'https://new.hfcc.org/data/{season.lower()}/{season.lower()}allx2.zip','EiBi':a.eibi_url or f'https://eibispace.de/dx/sked-{season.lower()}.csv'}
 with tempfile.TemporaryDirectory() as folder:
  paths={}
  for src,url in urls.items():
